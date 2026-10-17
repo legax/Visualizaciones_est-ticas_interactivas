@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Interactive Observable Plot Box Plot</title>
+
+  <script type="module">
+
+    import * as Plot
+      from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+
+    // ------------------------------------------------
+    // Load JSON data
+    // ------------------------------------------------
+
+    const response = await fetch("./datos_salarios.json");
+    const data = await response.json();
+
+    data.forEach(d => {
+      d.score = Number(d.score);
+    });
+
+
+    // ------------------------------------------------
+    // HTML elements
+    // ------------------------------------------------
+
+    const container = document.querySelector("#chart");
+    const filter = document.querySelector("#groupFilter");
+
+
+    // ------------------------------------------------
+    // Create filter options automatically
+    // ------------------------------------------------
+
+    const groups = [...new Set(data.map(d => d.group))];
+
+    groups.forEach(group => {
+
+      const option = document.createElement("option");
+
+      option.value = group;
+      option.textContent = group;
+
+      filter.appendChild(option);
+
+    });
+
+
+    // ------------------------------------------------
+    // Draw chart
+    // ------------------------------------------------
+
+    function drawChart() {
+
+      container.innerHTML = "";
+
+      // Get selected group
+      const selectedGroup = filter.value;
+
+      // Filter dataset
+      const filteredData =
+        selectedGroup === "All"
+          ? data
+          : data.filter(d => d.group === selectedGroup);
+
+
+      const chart = Plot.plot({
+
+        width: container.clientWidth,
+        height: 500,
+
+        marginLeft: 60,
+        marginBottom: 70,
+
+        x: {
+          label: "Departamento",
+          padding: 0.4
+        },
+
+        y: {
+          label: "Salario",
+          grid: true,
+          nice: true
+        },
+
+        marks: [
+
+          // ------------------------------------------
+          // Box Plot
+          // ------------------------------------------
+
+          Plot.boxY(filteredData, {
+            x: "group",
+            y: "score",
+            fill: "#4f86c6",
+            fillOpacity: 0.6,
+            stroke: "#2563eb"
+          }),
+
+
+          // ------------------------------------------
+          // Individual observations
+          // ------------------------------------------
+
+          Plot.dot(filteredData, {
+            x: "group",
+            y: "score",
+            r: 4,
+            fill: "#2563eb",
+            fillOpacity: 0.5
+          }),
+
+
+          // ------------------------------------------
+          // Interactive hover point
+          // ------------------------------------------
+
+          Plot.dot(
+            filteredData,
+            Plot.pointer({
+              x: "group",
+              y: "score",
+              r: 7,
+              fill: "#e11d48",
+              stroke: "white",
+              strokeWidth: 2
+            })
+          ),
+
+
+          // ------------------------------------------
+          // Interactive tooltip
+          // ------------------------------------------
+
+          Plot.tip(
+            filteredData,
+            Plot.pointer({
+              x: "group",
+              y: "score",
+
+              title: d =>
+                `${d.group}\nScore: ${d.score}`
+            })
+          )
+        ]
+      });
+
+      container.append(chart);
+    }
+
+
+    // ------------------------------------------------
+    // Initial chart
+    // ------------------------------------------------
+
+    drawChart();
+
+
+    // ------------------------------------------------
+    // Filter interaction
+    // ------------------------------------------------
+
+    filter.addEventListener("change", drawChart);
+
+
+    // ------------------------------------------------
+    // Responsive chart
+    // ------------------------------------------------
+
+    const resizeObserver = new ResizeObserver(drawChart);
+
+    resizeObserver.observe(container);
+
+  </script>
+
+
+  <style>
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f5f7fa;
+    }
+
+    .chart-container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .controls {
+      margin-bottom: 25px;
+    }
+
+    .controls label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #chart {
+      width: 100%;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <div class="chart-container">
+
+    <h2>Equidad salarial entre departamentos</h2>
+
+
+    <!-- Interactive filter -->
+
+    <div class="controls">
+
+      <label for="groupFilter">
+        Filtrar por departamento:
+      </label>
+
+      <select id="groupFilter">
+
+        <option value="All">
+          Todos
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <!-- Chart -->
+
+    <div id="chart"></div>
+
+  </div>
+
+</body>
+</html>

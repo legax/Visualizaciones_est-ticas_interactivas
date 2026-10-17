@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Interactive Observable Plot Line Chart</title>
+
+  <style>
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f5f7fa;
+    }
+
+    .chart-container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .controls {
+      margin-bottom: 25px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 250px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #chart {
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+
+      body {
+        margin: 10px;
+      }
+
+      .chart-container {
+        padding: 15px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="chart-container">
+
+    <h2>Ventas con estacionalidad</h2>
+
+    <!-- Interactive filter -->
+
+    <div class="controls">
+
+      <div class="control-group">
+
+        <label for="categoryFilter">
+          Filtrar por categoria:
+        </label>
+
+        <select id="categoryFilter">
+
+          <option value="All">
+            Todas
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- Line chart -->
+
+    <div id="chart"></div>
+
+  </div>
+
+
+  <script type="module">
+
+    import * as Plot
+      from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+
+
+    // --------------------------------------------
+    // LOAD JSON
+    // --------------------------------------------
+
+    const response =
+      await fetch("./datos_ventas.json");
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Unable to load data.json"
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+
+    // --------------------------------------------
+    // CONVERT DATA TYPES
+    // --------------------------------------------
+
+    data.forEach(d => {
+            
+      d.ventas_miles_mxn =
+        Number(d.ventas_miles_mxn);
+
+    });
+
+
+    // --------------------------------------------
+    // HTML ELEMENTS
+    // --------------------------------------------
+
+    const container =
+      document.querySelector("#chart");
+
+    const categoryFilter =
+      document.querySelector("#categoryFilter");
+
+
+    // --------------------------------------------
+    // CREATE FILTER OPTIONS
+    // --------------------------------------------
+
+    const categories = [
+      ...new Set(
+        data.map(d => d.categoria)
+      )
+    ];
+
+
+    categories.forEach(categoria => {
+
+      const option =
+        document.createElement("option");
+
+      option.value = categoria;
+
+      option.textContent = categoria;
+
+      categoryFilter.appendChild(option);
+
+    });
+
+
+    // --------------------------------------------
+    // DRAW LINE CHART
+    // --------------------------------------------
+
+    function drawChart() {
+
+      container.innerHTML = "";
+
+
+      // Selected category
+
+      const selectedCategory =
+        categoryFilter.value;
+
+
+      // ------------------------------------------
+      // FILTER DATA
+      // ------------------------------------------
+
+      const filteredData =
+        selectedCategory === "All"
+
+          ? data
+
+          : data.filter(
+              d =>
+                d.categoria === selectedCategory
+            );
+
+
+      // ------------------------------------------
+      // CREATE CHART
+      // ------------------------------------------
+
+      const chart = Plot.plot({
+
+        width:
+          Math.max(
+            container.clientWidth,
+            320
+          ),
+
+        height: 500,
+
+        marginLeft: 70,
+        marginBottom: 60,
+        marginRight: 30,
+
+
+        // ----------------------------------------
+        // X AXIS
+        // ----------------------------------------
+
+        x: {
+          
+
+          label: "Trimestre",
+
+          grid: true
+
+        },
+
+
+        // ----------------------------------------
+        // Y AXIS
+        // ----------------------------------------
+
+        y: {
+
+          label: "Ventas (miles_mxn)",
+
+          grid: true,
+
+          nice: true
+
+        },
+
+
+        // ----------------------------------------
+        // COLOR
+        // ----------------------------------------
+
+        color: {
+
+          legend:
+            selectedCategory === "All"
+
+        },
+
+
+        // ----------------------------------------
+        // MARKS
+        // ----------------------------------------
+
+        marks: [
+
+          // --------------------------------------
+          // LINES
+          // --------------------------------------
+
+          Plot.lineY(filteredData, {
+
+            x: "trimestre",
+
+            y: "ventas_miles_mxn",
+
+            stroke: "categoria",
+
+            curve: "monotone-x",
+
+            strokeWidth: 3
+
+          }),
+
+
+          // --------------------------------------
+          // DATA POINTS
+          // --------------------------------------
+
+          Plot.dot(filteredData, {
+
+            x: "trimestre",
+
+            y: "ventas_miles_mxn",
+
+            fill: "categoria",
+
+            r: 4
+
+          }),
+
+
+          // --------------------------------------
+          // INTERACTIVE VERTICAL LINE
+          // --------------------------------------
+
+          Plot.ruleX(
+
+            filteredData,
+
+            Plot.pointerX({
+
+              x: "trimestre",
+
+              stroke: "#777",
+
+              strokeOpacity: 0.5
+
+            })
+
+          ),
+
+
+          // --------------------------------------
+          // INTERACTIVE POINT
+          // --------------------------------------
+
+          Plot.dot(
+
+            filteredData,
+
+            Plot.pointerX({
+
+              x: "trimestre",
+
+              y: "ventas_miles_mxn",
+
+              fill: "categoria",
+
+              stroke: "white",
+
+              strokeWidth: 2,
+
+              r: 7
+
+            })
+
+          ),
+
+
+          // --------------------------------------
+          // INTERACTIVE TOOLTIP
+          // --------------------------------------
+
+          Plot.tip(
+
+            filteredData,
+
+            Plot.pointerX({
+
+              x: "trimestre",
+
+              y: "ventas_miles_mxn",
+
+              title: d => {
+               
+                return `${d.categoria} 
+                Value: ${d.ventas_miles_mxn}`;
+
+              }
+
+            })
+
+          )
+
+        ]
+
+      });
+
+
+      container.append(chart);
+
+    }
+
+
+    // --------------------------------------------
+    // INITIAL CHART
+    // --------------------------------------------
+
+    drawChart();
+
+
+    // --------------------------------------------
+    // FILTER INTERACTION
+    // --------------------------------------------
+
+    categoryFilter.addEventListener(
+      "change",
+      drawChart
+    );
+
+
+    // --------------------------------------------
+    // RESPONSIVE CHART
+    // --------------------------------------------
+
+    let resizeTimer;
+
+
+    const resizeObserver =
+      new ResizeObserver(() => {
+
+        clearTimeout(resizeTimer);
+
+        resizeTimer =
+          setTimeout(
+            drawChart,
+            100
+          );
+
+      });
+
+
+    resizeObserver.observe(container);
+
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,28 @@
+[
+  { "trimestre": "2025-T1", "categoria": "Electrónica", "ventas_miles_mxn": 120},
+  { "trimestre": "2025-T2", "categoria": "Electrónica", "ventas_miles_mxn": 135},
+  { "trimestre": "2025-T3", "categoria": "Electrónica", "ventas_miles_mxn": 150},
+  { "trimestre": "2025-T4", "categoria": "Electrónica", "ventas_miles_mxn": 220},
+  { "trimestre": "2026-T1", "categoria": "Electrónica", "ventas_miles_mxn": 140},
+  { "trimestre": "2026-T2", "categoria": "Electrónica", "ventas_miles_mxn": 155}, 
+  { "trimestre": "2026-T3", "categoria": "Electrónica", "ventas_miles_mxn": 175},
+  { "trimestre": "2026-T4", "categoria": "Electrónica", "ventas_miles_mxn": 250},
+
+  { "trimestre": "2025-T1", "categoria": "Ropa", "ventas_miles_mxn": 90},
+  { "trimestre": "2025-T2", "categoria": "Ropa", "ventas_miles_mxn": 110},
+  { "trimestre": "2025-T3", "categoria": "Ropa", "ventas_miles_mxn": 105},
+  { "trimestre": "2025-T4", "categoria": "Ropa", "ventas_miles_mxn": 160},
+  { "trimestre": "2026-T1", "categoria": "Ropa", "ventas_miles_mxn": 100},
+  { "trimestre": "2026-T2", "categoria": "Ropa", "ventas_miles_mxn": 120},
+  { "trimestre": "2026-T3", "categoria": "Ropa", "ventas_miles_mxn": 115},
+  { "trimestre": "2026-T4", "categoria": "Ropa", "ventas_miles_mxn": 180},
+
+  { "trimestre": "2025-T1", "categoria": "Hogar", "ventas_miles_mxn": 70},
+  { "trimestre": "2025-T2", "categoria": "Hogar", "ventas_miles_mxn": 75},
+  { "trimestre": "2025-T3", "categoria": "Hogar", "ventas_miles_mxn": 85},
+  { "trimestre": "2025-T4", "categoria": "Hogar", "ventas_miles_mxn": 130},
+  { "trimestre": "2026-T1", "categoria": "Hogar", "ventas_miles_mxn": 80},
+  { "trimestre": "2026-T2", "categoria": "Hogar", "ventas_miles_mxn": 90},
+  { "trimestre": "2026-T3", "categoria": "Hogar", "ventas_miles_mxn": 100},
+  { "trimestre": "2026-T4", "categoria": "Hogar", "ventas_miles_mxn": 150}
+]

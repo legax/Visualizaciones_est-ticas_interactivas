@@ -1,0 +1,186 @@
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos por municipio de Aguascalientes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+    }
+
+    #mapa {
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    #estado {
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Casos por municipio de Aguascalientes</h2>  
+  <div id="mapa"></div>
+
+  <script type="module">
+    import * as Plot from
+      "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+
+    const estado = document.querySelector("#estado");
+    const contenedor = document.querySelector("#mapa");
+
+    function normalizar(texto) {
+      return String(texto ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+    }
+
+    function obtenerPuntos(geometry) {
+      if (geometry.type === "Polygon") {
+        return geometry.coordinates.flat();
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        return geometry.coordinates.flat(2);
+      }
+
+      return [];
+    }
+
+    async function cargarMapa() {
+      try {
+        const [rDatos, rMapa] = await Promise.all([
+          fetch("./datos_municipios.json"),
+          fetch("https://gaia.inegi.org.mx/wscatgeo/v2/geo/mgem/01")
+        ]);
+
+        if (!rDatos.ok) {
+          throw new Error("No se encontró datos_municipios.json");
+        }
+
+        if (!rMapa.ok) {
+          throw new Error("No se pudo cargar el mapa del INEGI");
+        }
+
+        const datos = await rDatos.json();
+        const geojson = await rMapa.json();
+
+        if (!Array.isArray(datos) ||
+            !Array.isArray(geojson.features)) {
+          throw new Error("El formato de los datos no es válido");
+        }        
+
+        const valores = new Map(
+          datos.map(d => [normalizar(d.category), d.value])
+        );
+
+        const municipios = geojson.features
+          .filter(f => f.geometry && f.properties)
+          .map(f => {
+            const nombre =
+              f.properties.nomgeo ??
+              f.properties.NOMGEO ??
+              f.properties.nombre;
+
+            return {
+              type: "Feature",
+              geometry: f.geometry,
+              properties: {
+                ...f.properties,
+                nombreMunicipio: nombre ?? "Sin nombre",
+                casos: valores.get(normalizar(nombre)) ?? null
+              }
+            };
+          });
+
+        if (!municipios.length) {
+          throw new Error("No se encontraron municipios con geometría");
+        }
+
+        // Ajustar el mapa a la extensión real de los municipios.
+        const dominio = {
+          type: "FeatureCollection",
+          features: municipios
+        };
+
+        // Calcular un punto central aproximado para cada etiqueta.
+        const etiquetas = municipios.map(m => {
+          const puntos = obtenerPuntos(m.geometry)
+            .filter(p => Array.isArray(p) && p.length >= 2);
+
+          if (!puntos.length) return null;
+
+          const xs = puntos.map(p => p[0]);
+          const ys = puntos.map(p => p[1]);
+
+          return {
+            nombre: m.properties.nombreMunicipio,
+            x: (Math.min(...xs) + Math.max(...xs)) / 2,
+            y: (Math.min(...ys) + Math.max(...ys)) / 2
+          };
+        }).filter(Boolean);
+
+        const coincidencias = municipios.filter(
+          m => m.properties.casos !== null
+        ).length;        
+
+        const mapa = Plot.plot({
+          width: 900,
+          height: 700,
+
+          projection: {
+            type: "mercator",
+            domain: dominio
+          },
+
+          color: {
+            type: "linear",
+            scheme: "YlOrRd",
+            legend: true,
+            label: "Casos confirmados"
+          },
+
+          marks: [
+            Plot.geo(municipios, {
+              fill: d => d.properties.casos,
+              stroke: "#ffffff",
+              strokeWidth: 1.2,
+              title: d =>
+                `${d.properties.nombreMunicipio}: ${
+                  d.properties.casos ?? "Sin datos"
+                }`
+            }),
+
+            Plot.text(etiquetas, {
+              x: "x",
+              y: "y",
+              text: "nombre",
+              textAnchor: "middle",
+              fontSize: 10,
+              fontWeight: "bold",
+              fill: "#111111",
+              stroke: "white",
+              strokeWidth: 3,
+              paintOrder: "stroke"
+            })
+          ]
+        });
+
+        contenedor.replaceChildren(mapa);
+
+      } catch (error) {
+        estado.textContent = "Error: " + error.message;
+        console.error(error);
+      }
+    }
+
+    cargarMapa();
+  </script>
+</body>
+</html>
